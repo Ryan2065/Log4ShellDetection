@@ -8,6 +8,12 @@ This is written in PowerShell, targets Windows, and is meant to find Log4Shell v
 
 The script is compiled into a single file for easy portability. [Download](https://raw.githubusercontent.com/Ryan2065/Log4ShellDetection/main/Log4ShellDetectionScript.ps1) the latest version and run with it!
 
+You can also get it from the [gallery](https://www.powershellgallery.com/packages/Log4ShellDetectionScript/1.0):
+
+``` PowerShell
+Install-Script -Name Log4ShellDetectionScript
+```
+
 Once downloaded, just run it with:
 
 ```PowerShell
