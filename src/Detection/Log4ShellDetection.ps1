@@ -1,3 +1,41 @@
+
+<#PSScriptInfo
+
+.VERSION 1.0
+
+.GUID f95ba891-b109-4180-89e0-c2827eababef
+
+.AUTHOR Ryan Ephgrave
+
+.COMPANYNAME EphingAdmin
+
+.COPYRIGHT MIT
+
+.TAGS 
+
+.LICENSEURI 
+
+.PROJECTURI 
+
+.ICONURI 
+
+.EXTERNALMODULEDEPENDENCIES 
+
+.REQUIREDSCRIPTS 
+
+.EXTERNALSCRIPTDEPENDENCIES 
+
+.RELEASENOTES
+
+
+#>
+
+<# 
+
+.DESCRIPTION 
+ Detect Log4Shell 
+
+#> 
 Param(
     [ValidateSet("Host", "Registry", "Objects")]
     $OutputType = "Objects"
