@@ -1,6 +1,6 @@
 Param(
-    [ValidateSet("Host", "Registry")]
-    $OutputType = "Host"
+    [ValidateSet("Host", "Registry", "Objects")]
+    $OutputType = "Objects"
 )
 
 $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
@@ -97,5 +97,9 @@ elseif($OutputType -eq "Registry"){
         Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "FileHash" -Value $vFile.FileHash -Force
         Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "ParentJarPath" -Value $vFile.ParentJarPath -Force
     }
+}
+elseif($OutputType -eq "Objects"){
+
+    $Log4ShellResults
 }
 Stop-Transcript
