@@ -4,6 +4,18 @@ Yet another Log4Shell detection script
 
 This is written in PowerShell, targets Windows, and is meant to find Log4Shell vulnerabilities wherever they may be
 
+# How do I use it?
+
+The script is compiled into a single file for easy portability. [Download](https://raw.githubusercontent.com/Ryan2065/Log4ShellDetection/main/Log4ShellDetectionScript.ps1) the latest version and run with it!
+
+Once downloaded, just run it with:
+
+```PowerShell
+$results = . .\Log4ShellDetectionScript.ps1 -OutputType "Objects"
+```
+
+OutputType can be changed based on how it's running - see notes below.
+
 # Why this script?
 
 There are a number of other PowerShell scripts out there, but they have a number of gaps. I stumbled upon a [utility written in Go](https://github.com/hillu/local-log4j-vuln-scanner) that I thought had a great methodoligy. It opens up the Jar files (jar files are just archives) and looks at the hash of the problem .class files. If the hash matches a vulnerable hash, it's marked as detected.
