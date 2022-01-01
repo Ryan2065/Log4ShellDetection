@@ -1,6 +1,8 @@
 Function Get-Log4ShellIdentifiers{
-    Param()
-    if($null -eq $Script:Log4ShellIds){
+    Param(
+        [string[]]$CVEsToDetect
+    )
+    if($null -eq $Script:Log4ShellIds -or ( $null -ne $CVEsToDetect )){
     #output from Search-DownloadedJars.ps1
         $Script:Log4ShellIds = @'
     [
@@ -488,6 +490,23 @@ Function Get-Log4ShellIdentifiers{
 ]
 
 '@ | ConvertFrom-JSON
+        if($null -ne $CVEsToDetect){
+            $FixedLog4ShellIdList = @()
+            foreach($instance in $Script:Log4ShellIds){
+                $instanceCVEList = $instance.CVE.Split(",")
+                $NewCVEList = @()
+                foreach($i in $instanceCVEList){
+                    if($CVEsToDetect -contains $i){
+                        $NewCVEList += $i
+                    }
+                }
+                if($NewCVEList.Count -gt 0){
+                    $instance.CVE = $NewCVEList -join ","
+                    $FixedLog4ShellIdList += $instance
+                }
+            }
+            $Script:Log4ShellIds = $FixedLog4ShellIdList
+        }
     }
     return $Script:Log4ShellIds
 }

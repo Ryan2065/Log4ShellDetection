@@ -4,6 +4,35 @@ Yet another Log4Shell detection script
 
 This is written in PowerShell, targets Windows, and is meant to find Log4Shell vulnerabilities wherever they may be
 
+# CVEs detected
+
+## How I got the CVE information
+
+I wrote a script to scrape Maven (site where Log4J is hosted) Log4J versions and compile which ones were vulnerable to which CVEs as direct vulnerabilities or indrect vulnerabilities. This script also downloaded those Log4J versions and looked for the problem class files socketnode.class, jdnimanager.class, or JndiLookup.class. A SHA256 hash of each file was taken and saved for use in the detection script. With those hashes, we can scan any jar file and know if it has vulnerable code associated with one of the Log4Shell CVEs. 
+
+## CVE Rules
+
+* CVE-2021-44228
+    * Description: First Log4Shell vulnerability that allows for remote code execution
+    * Rules: 
+        * Flagged if any jar uses jdnimanager.class or jdnilookup.class from vulnerable Log4J versions
+        * Flagged if the jar file is log4j from a version that's vulnerable
+* CVE-2021-45046
+    * Description: Originally just a denial of service vulnerability, was then upgraded to remote code exection that still applied to Log4J 2.15 (the latest fixed version at the time)
+    * Rules:
+        * Flagged if any jar uses jdnimanager.class or jdnilookup.class from vulnerable Log4J versions
+        * Flagged if the jar file is log4j from a version that's vulnerable
+* CVE-2021-45105
+    * Description: Denial of service vulnerability exploitable in non-default configurations
+    * Rules:
+        * Flagged if any jar uses jdnimanager.class or jdnilookup.class from vulnerable Log4J versions
+        * Flagged if the jar file is log4j from a version that's vulnerable
+* CVE-2021-4104
+    * CVE associated with Log4J v1.*
+    * Detected based on socketnode.class file in the jar
+    * Log4J v1.* is only vulnerable if configured with JMSAppender. As of v1.3 of the detection script, we only flag Log4J v1 as vulnerable if JMSAppender is also there.
+
+
 # How do I use it?
 
 The script is compiled into a single file for easy portability. [Download](https://raw.githubusercontent.com/Ryan2065/Log4ShellDetection/main/Log4ShellDetectionScript.ps1) the latest version and run with it!
@@ -21,6 +50,14 @@ $results = . .\Log4ShellDetectionScript.ps1 -OutputType "Objects"
 ```
 
 OutputType can be changed based on how it's running - see notes below.
+
+If you want to pick the CVEs it searches for, run it with:
+
+```PowerShell
+$results = . .\Log4ShellDetectionScript.ps1 -OutputType "Objects" -CVEsToDetect @("CVE-2021-4104")
+```
+
+The above will only search for CVE-2021-4104 instead of all 4 CVEs. 
 
 # Why this script?
 
@@ -83,3 +120,5 @@ Great, glad someone's using the script. Post the issue in GitHub and I'll take a
 
 * 1.0 - Initial release
 * 1.1 - Bug fix - recursive jar search works properly now
+* 1.2 - CVE-2021-4104 only triggers in Log4j v1 if the class JMSAppender exists
+* 1.2.1 - Added parameter to specify the CVE you want to search for on the main script. Default is all 4, but can narrow down to one or two

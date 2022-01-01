@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.2
+.VERSION 1.2.1
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -38,7 +38,8 @@
 #> 
 Param(
     [ValidateSet("Host", "Registry", "Objects")]
-    $OutputType = "Objects"
+    $OutputType = "Objects",
+    [string[]]$CVEsToDetect = @("CVE-2021-44228","CVE-2021-45046","CVE-2021-45105","CVE-2021-4104")
 )
 
 $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
@@ -64,6 +65,8 @@ $Global:Log4ShellResults = New-Object System.Collections.Generic.List[object]
 Get-ChildItem "$PSScriptRoot\Functions" -Filter '*.ps1' | ForEach-Object { . $_.FullName }
 
 #endregion
+
+$null = Get-Log4ShellIdentifiers -CVEsToDetect $CVEsToDetect
 
 $JavaFiles = Find-Log4ShellFiles
 
