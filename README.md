@@ -78,3 +78,8 @@ Great, glad someone's using the script. Post the issue in GitHub and I'll take a
 # Known issues
 
 1) One known issue that I came across when testing - If there's only a match on .class files and the script can't find the version in the manifest, it will report back as multiple versions. So if you see a .jar and the version reporeted of log4j is a comma separated list, that's why. It found a class that's vulnerable, and is associated with one of those versions, but was not able to narrow it down. It should only ever return 2 or 3 versions this way if there's a match.
+
+# Versions
+
+* 1.0 - Initial release
+* 1.1 - Bug fix - recursive jar search works properly now
