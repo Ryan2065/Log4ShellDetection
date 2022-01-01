@@ -1,16 +1,18 @@
 Function Search-Log4Shell {
     Param(
         $Path,
-        $ZipStream,
+        $ChildEntry,
         $ParentJar
     )
     #MD5 hash is quick and we're just using it to see if we've scanned this already
-    if($null -eq $ZipStream){
+    if($null -eq $ChildEntry){
         $JarHash = (Get-FileHash -Path $path -Algorithm MD5).Hash
     }
     else{
+        $ZipStream = $ChildEntry.Open()
         $md5 = [System.Security.Cryptography.MD5]::Create()
         $JarHash = [System.BitConverter]::ToString( $md5.ComputeHash($ZipStream) ).Replace("-","").ToLower()
+        $ZipStream.Close()
     }
     $Result = [Log4JResult]::new()
     $Result.FileHash = $JarHash
@@ -31,7 +33,8 @@ Function Search-Log4Shell {
 
     $FoundVersionFromManifest = $false
 
-    if($null -ne $ZipStream){
+    if($null -ne $ChildEntry){
+        $ZipStream = $ChildEntry.Open()
         $zip = [System.IO.Compression.ZipArchive]::new($ZipStream, 0)
     }
     else{
@@ -82,10 +85,10 @@ Function Search-Log4Shell {
             }
         }
         elseif($entry.Name -like "*.jar"){
-            $Stream = $entry.Open()
+            
             $ParentJarParam = $Path
             if(-not [string]::IsNullOrWhiteSpace($ParentJar)){ $ParentJarParam = $ParentJar }
-            $ChildResults = Search-Log4Shell -Stream $Stream -ParentJar $ParentJarParam
+            $ChildResults = Search-Log4Shell -ChildEntry $entry -ParentJar $ParentJarParam
             foreach($cresult in $ChildResults){
                 if($cresult.Vulnerable){
                     $result.EmbeddedJarVulnerable = $true
@@ -95,7 +98,6 @@ Function Search-Log4Shell {
                     $result.DetectedClass += @($cresult.DetectedClass)
                 }
             }
-            $Stream.Close()
         }
     }
     $result.DetectedClass = $result.DetectedClass | Select-Object -Unique
