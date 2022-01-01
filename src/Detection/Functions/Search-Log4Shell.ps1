@@ -40,6 +40,12 @@ Function Search-Log4Shell {
     else{
         $Zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
     }
+    $FoundJMSAppender = $false
+    foreach($entry in $Zip.Entries){
+        if($entry.Name -match "jmsappender"){
+            $FoundJMSAppender = $true
+        }
+    }
     :Entry foreach($entry in $Zip.Entries){
         if($entry.Name -match "jndilookup" -or $entry.Name -match "jndimanager" -or $entry.Name -match "socketnode" -or $entry.Name -match "manifest.mf"){
             if($entry.Name -match "jndilookup" -or $entry.Name -match "jndimanager" -or $entry.Name -match "socketnode"){
@@ -54,13 +60,7 @@ Function Search-Log4Shell {
                     # SocketNode is associated with a vulnerability in version 1 which is only
                     # vulnerable if JMSAppender is also used - so if JMSAppender.class isn't found
                     # it should be safe from CVE-2021-4104
-                    $foundJMSAppender = $false
-                    foreach($secondEntry in $Zip.Entries){
-                        if($secondEntry.Name -match 'JMSAppender'){
-                            $foundJMSAppender = $true
-                        }
-                    }
-                    if($foundJMSAppender){ continue Entry }
+                    if(-not $foundJMSAppender){ continue Entry }
                 }
                 $Stream = $entry.Open()
                 $managedSHA = [System.Security.Cryptography.SHA256Managed]::Create()

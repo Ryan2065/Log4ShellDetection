@@ -38,7 +38,7 @@
 #> 
 Param(
     [ValidateSet("Host", "Registry", "Objects")]
-    $OutputType = "Host"
+    $OutputType = "Objects"
 )
 
 $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
