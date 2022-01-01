@@ -37,7 +37,7 @@ I wrote a script to scrape Maven (site where Log4J is hosted) Log4J versions and
 
 The script is compiled into a single file for easy portability. [Download](https://raw.githubusercontent.com/Ryan2065/Log4ShellDetection/main/Log4ShellDetectionScript.ps1) the latest version and run with it!
 
-You can also get it from the [gallery](https://www.powershellgallery.com/packages/Log4ShellDetectionScript/1.0):
+You can also get it from the [gallery](https://www.powershellgallery.com/packages/Log4ShellDetectionScript):
 
 ``` PowerShell
 Install-Script -Name Log4ShellDetectionScript
