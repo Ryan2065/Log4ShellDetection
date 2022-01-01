@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.1
+.VERSION 1.2
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -38,7 +38,7 @@
 #> 
 Param(
     [ValidateSet("Host", "Registry", "Objects")]
-    $OutputType = "Objects"
+    $OutputType = "Host"
 )
 
 $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
