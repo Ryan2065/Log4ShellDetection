@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.2.2
+.VERSION 1.3.0
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -37,14 +37,17 @@
 
 #> 
 Param(
-    [ValidateSet("Host", "Registry", "Objects")]
+    [ValidateSet("Host", "Registry", "Objects", "JSON")]
     $OutputType = "Objects",
+    [bool]$OutputAll = $false,
     [string[]]$CVEsToDetect = @("CVE-2021-44228","CVE-2021-45046","CVE-2021-45105","CVE-2021-4104"),
-    [string[]]$FilesToScan
+    [string[]]$FilesToScan,
+    [bool]$Transcript = $true
 )
-
-$LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
-Start-Transcript -Path $LogLocation -ErrorAction SilentlyContinue
+if($Transcript){
+    $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
+    Start-Transcript -Path $LogLocation -ErrorAction SilentlyContinue    
+}
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
@@ -115,38 +118,72 @@ foreach($file in ($JavaFiles | Select-Object -Unique) ){
 
 $VulnerableFiles = @(foreach($r in $Log4ShellResults){ if($r.Vulnerable){ $r } })
 
+$OutputSet = $VulnerableFiles
+if($OutputAll){
+    $OutputSet = $Log4ShellResults
+}
+
 if($OutputType -eq 'Host'){
     Write-Host "--- Summary ----"
     Write-Host "Scanned $($Log4ShellResults.Count) jar files and embedded jar files"
     Write-Host "Found $($VulnerableFiles.Count) vulnerabilities"
-    foreach($vFile in $VulnerableFiles){
-        Write-host "  Vulnerabile file: $($vFile.FilePath) - CVEs: $($vFile.CVE -join ",") - Detected Version: $($vFile.DetectedVersion -join ",") - Detected Problem Class Files: $($vFile.DetectedClass -join ",")"
+    foreach($vFile in $OutputSet){
+        if($vFile.Vulnerable){
+            Write-host "  Vulnerabile file: $($vFile.FilePath) - CVEs: $($vFile.CVE -join ",") - Detected Version: $($vFile.DetectedVersion -join ",") - Detected Problem Class Files: $($vFile.DetectedClass -join ",")"
+        }
+        else{
+            Write-Host "  Not Vulnerable file: $($vFile.FilePath)"
+        }
     }
 }
 elseif($OutputType -eq "Registry"){
     #Only write to HKLM if we're admin
     $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     if($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){
-        $RegHiveLocation = "HKLM:\SOFTWARE\Log4ShellDetection"
+        $Hive = [Microsoft.Win32.RegistryHive]::LocalMachine
     }
     else{
-        $RegHiveLocation = "HKCU:\SOFTWARE\Log4ShellDetection"
+        $Hive = [Microsoft.Win32.RegistryHive]::CurrentUser
     }
-    $null = Remove-Item -Path $RegHiveLocation -Force -Recurse -ErrorAction SilentlyContinue
-    $null = New-Item -Path $RegHiveLocation -Type Directory -Force -ErrorAction SilentlyContinue
-    foreach($vFile in $VulnerableFiles){
-        $null = New-Item -Path "$RegHiveLocation\$($vFile.FileHash)" -Type Directory -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "FilePath" -Value $vFile.FilePath -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "Vulnerable" -Value $vFile.Vulnerable -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "EmbeddedJarVulnerable" -Value $vFile.EmbeddedJarVulnerable -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "DetectedClass" -Value ($vFile.DetectedClass -join ",") -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "DetectedVersion" -Value ($vFile.DetectedVersion -join ",") -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "CVE" -Value ($vFile.CVE -join ",") -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "FileHash" -Value $vFile.FileHash -Force
-        Set-ItemProperty -Path "$RegHiveLocation\$($vFile.FileHash)" -Name "ParentJarPath" -Value $vFile.ParentJarPath -Force
+    If ($ENV:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
+        $key = [Microsoft.Win32.RegistryKey]::OpenBaseKey($Hive, [Microsoft.Win32.RegistryView]::Registry64)
+
+    }
+    else{
+        $key = [Microsoft.Win32.RegistryKey]::OpenBaseKey($Hive, [Microsoft.Win32.RegistryView]::Default)
+    }
+    $SoftwareKey = $Key.OpenSubKey('SOFTWARE', $true)
+    try{
+        if($Log4ShellKey = $SoftwareKey.OpenSubKey('Log4ShellDetection')){
+            # removing previous results
+            $null = $SoftwareKey.DeleteSubKeyTree('Log4ShellDetection')
+        }
+    }
+    catch{
+        
+    }
+    $null = $SoftwareKey.CreateSubKey('Log4ShellDetection')
+    $Log4ShellDetectionKey = $SoftwareKey.OpenSubKey('Log4ShellDetection', $true)
+    foreach($vFile in $OutputSet){
+        $null = $Log4ShellDetectionKey.CreateSubKey($vFile.FileHash)
+        $tempSubKey = $Log4ShellDetectionKey.OpenSubKey($vFile.FileHash, $true)
+        $Log4ShellDetectionKey.SetValue("FilePath", "")
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "FilePath" -Value $vFile.FilePath
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "Vulnerable" -Value $vFile.Vulnerable
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "EmbeddedJarVulnerable" -Value $vFile.EmbeddedJarVulnerable
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "DetectedClass" -Value ($vFile.DetectedClass -join ",")
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "DetectedVersion" -Value ($vFile.DetectedVersion -join ",")
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "CVE" -Value ($vFile.CVE -join ",")
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "FileHash" -Value $vFile.FileHash
+        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "ParentJarPath" -Value $vFile.ParentJarPath
     }
 }
 elseif($OutputType -eq "Objects"){
-    $Log4ShellResults
+    $OutputSet
 }
-Stop-Transcript
+elseif($OutputType -eq 'JSON'){
+    $OutputSet | ConvertTo-JSON
+}
+if($Transcript){
+    Stop-Transcript
+}
