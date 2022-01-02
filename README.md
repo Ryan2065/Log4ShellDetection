@@ -123,3 +123,7 @@ Great, glad someone's using the script. Post the issue in GitHub and I'll take a
 * 1.2 - CVE-2021-4104 only triggers in Log4j v1 if the class JMSAppender exists
 * 1.2.1 - Added parameter to specify the CVE you want to search for on the main script. Default is all 4, but can narrow down to one or two
 * 1.2.2 - Added parameter to scan specific files instead of the entire drive
+* 1.3.0 - Made it write to 64-bit registry from 32-bit processes on 64-bit machines
+    * Added JSON as output type
+    * Added parameter for OutputAll - this will output vulnerable and non-vulnerable objects (can parse which is which through the Vulnerable property)
+    * Added Transcript parameter to enable / disable transcripts on the scan
