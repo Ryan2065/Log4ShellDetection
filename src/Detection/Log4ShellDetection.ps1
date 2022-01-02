@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.2.1
+.VERSION 1.2.2
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -39,7 +39,8 @@
 Param(
     [ValidateSet("Host", "Registry", "Objects")]
     $OutputType = "Objects",
-    [string[]]$CVEsToDetect = @("CVE-2021-44228","CVE-2021-45046","CVE-2021-45105","CVE-2021-4104")
+    [string[]]$CVEsToDetect = @("CVE-2021-44228","CVE-2021-45046","CVE-2021-45105","CVE-2021-4104"),
+    [string[]]$FilesToScan
 )
 
 $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
@@ -68,7 +69,13 @@ Get-ChildItem "$PSScriptRoot\Functions" -Filter '*.ps1' | ForEach-Object { . $_.
 
 $null = Get-Log4ShellIdentifiers -CVEsToDetect $CVEsToDetect
 
-$JavaFiles = Find-Log4ShellFiles
+
+if($null -ne $FilesToScan) {
+    $JavaFiles = @($FilesToScan)
+}
+else{
+    $JavaFiles = Find-Log4ShellFiles
+}
 
 foreach($file in ($JavaFiles | Select-Object -Unique) ){
     if([string]::IsNullOrWhiteSpace($file)) { continue }
@@ -140,7 +147,6 @@ elseif($OutputType -eq "Registry"){
     }
 }
 elseif($OutputType -eq "Objects"){
-
     $Log4ShellResults
 }
 Stop-Transcript
