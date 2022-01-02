@@ -1,0 +1,75 @@
+// RegKeyToMOF by Mark Cochrane (with help from Skissinger, SteveRac, Jonas Hettich, Kent Agerlund & Barker)
+// this section tells the inventory agent what to collect
+// 1/1/2022 3:16:36 PM
+
+#pragma namespace ("\\\\.\\root\\cimv2")
+#pragma deleteclass("Log4ShellDetection", NOFAIL)
+[dynamic, provider("RegProv"), ClassContext("Local|HKEY_LOCAL_MACHINE\\SOFTWARE\\Log4ShellDetection")]
+Class Log4ShellDetection
+{
+[key] string KeyName;
+[PropertyContext("FilePath")] String FilePath;
+[PropertyContext("Vulnerable")] String Vulnerable;
+[PropertyContext("EmbeddedJarVulnerable")] String EmbeddedJarVulnerable;
+[PropertyContext("DetectedClass")] String DetectedClass;
+[PropertyContext("DetectedVersion")] String DetectedVersion;
+[PropertyContext("CVE")] String CVE;
+[PropertyContext("FileHash")] String FileHash;
+[PropertyContext("ParentJarPath")] String ParentJarPath;
+};
+
+#pragma namespace ("\\\\.\\root\\cimv2")
+#pragma deleteclass("Log4ShellDetection_64", NOFAIL)
+[dynamic, provider("RegProv"), ClassContext("Local|HKEY_LOCAL_MACHINE\\SOFTWARE\\Log4ShellDetection")]
+Class Log4ShellDetection_64
+{
+[key] string KeyName;
+[PropertyContext("FilePath")] String FilePath;
+[PropertyContext("Vulnerable")] String Vulnerable;
+[PropertyContext("EmbeddedJarVulnerable")] String EmbeddedJarVulnerable;
+[PropertyContext("DetectedClass")] String DetectedClass;
+[PropertyContext("DetectedVersion")] String DetectedVersion;
+[PropertyContext("CVE")] String CVE;
+[PropertyContext("FileHash")] String FileHash;
+[PropertyContext("ParentJarPath")] String ParentJarPath;
+};
+
+// RegKeyToMOF by Mark Cochrane (with help from Skissinger, SteveRac, Jonas Hettich, Kent Agerlund & Barker)
+// this section tells the inventory agent what to report to the server
+// 1/1/2022 3:16:36 PM
+
+#pragma namespace ("\\\\.\\root\\cimv2\\SMS")
+#pragma deleteclass("Log4ShellDetection", NOFAIL)
+[SMS_Report(TRUE),SMS_Group_Name("Log4ShellDetection"),SMS_Class_ID("Log4ShellDetection"),
+SMS_Context_1("__ProviderArchitecture=32|uint32"),
+SMS_Context_2("__RequiredArchitecture=true|boolean")]
+Class Log4ShellDetection: SMS_Class_Template
+{
+[SMS_Report(TRUE),key] string KeyName;
+[SMS_Report(TRUE)] String FilePath;
+[SMS_Report(TRUE)] String Vulnerable;
+[SMS_Report(TRUE)] String EmbeddedJarVulnerable;
+[SMS_Report(TRUE)] String DetectedClass;
+[SMS_Report(TRUE)] String DetectedVersion;
+[SMS_Report(TRUE)] String CVE;
+[SMS_Report(TRUE)] String FileHash;
+[SMS_Report(TRUE)] String ParentJarPath;
+};
+
+#pragma namespace ("\\\\.\\root\\cimv2\\SMS")
+#pragma deleteclass("Log4ShellDetection_64", NOFAIL)
+[SMS_Report(TRUE),SMS_Group_Name("Log4ShellDetection64"),SMS_Class_ID("Log4ShellDetection64"),
+SMS_Context_1("__ProviderArchitecture=64|uint32"),
+SMS_Context_2("__RequiredArchitecture=true|boolean")]
+Class Log4ShellDetection_64 : SMS_Class_Template
+{
+[SMS_Report(TRUE),key] string KeyName;
+[SMS_Report(TRUE)] String FilePath;
+[SMS_Report(TRUE)] String Vulnerable;
+[SMS_Report(TRUE)] String EmbeddedJarVulnerable;
+[SMS_Report(TRUE)] String DetectedClass;
+[SMS_Report(TRUE)] String DetectedVersion;
+[SMS_Report(TRUE)] String CVE;
+[SMS_Report(TRUE)] String FileHash;
+[SMS_Report(TRUE)] String ParentJarPath;
+};
