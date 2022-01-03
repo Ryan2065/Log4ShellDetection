@@ -14,7 +14,7 @@ Function Search-Log4Shell {
         $JarHash = [System.BitConverter]::ToString( $md5.ComputeHash($ZipStream) ).Replace("-","").ToLower()
         $ZipStream.Close()
     }
-    $Result = [Log4JResult]::new()
+    $Result = New-Log4ShellResult
     $Result.FileHash = $JarHash
     $Result.FilePath = $Path
     $Result.Vulnerable = $false

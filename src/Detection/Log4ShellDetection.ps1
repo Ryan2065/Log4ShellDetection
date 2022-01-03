@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.3.0
+.VERSION 1.3.1
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -30,12 +30,44 @@
 
 #>
 
-<# 
+<#
+.SYNOPSIS
+Log4Shell Detection script 
 
-.DESCRIPTION 
- Detect Log4Shell 
+.DESCRIPTION
+Uses known hash values of .CLASS files in Log4J to find jar files with Log4J code that has a Log4Shell vulnerability
 
-#> 
+.PARAMETER OutputType
+Type of output. Objects will return as PSObject, Host will return a summary with the objects, Registry will output to HLKM:\Software\Log4ShellDetection, and JSON will return a JSON string
+
+.PARAMETER OutputAll
+If true - will return all jar files scanned. If false, returns only results that are flagged as having a vulnerability
+
+.PARAMETER CVEsToDetect
+Array of CVEs to detect. If the first array item is a comma separate list, it'll split that and use it. This allows for sending a comma separate list from the command line instead of a PowerShell array object.
+
+.PARAMETER FilesToScan
+Skip scanning the drive and instead scan specific files. Wants an array, but if sent a comma separate list it'll convert it to an array.
+
+.PARAMETER Transcript
+If true, will output a transcript to $env:Temp. If false, no transcript generated
+
+.EXAMPLE
+PS> . .\Log4ShellDetection.ps1 "Registry" 0 "CVE-2021-44228,CVE-2021-45046" "" 0
+Example usable from cmd.exe to scan for two specific CVEs, disable transcripts, and put results in the registry.
+
+.EXAMPLE
+PS> . .\Log4ShellDetection.ps1
+Run the script with default settings
+
+.EXAMPLE
+PS> . .\Log4ShellDetection.ps1 -FilesToScan @('c:\jarfile.jar') -Transcript $false
+Scans a specific file with transcript off
+
+.NOTES
+.Author: Ryan Ephgrave
+#>
+
 Param(
     [ValidateSet("Host", "Registry", "Objects", "JSON")]
     $OutputType = "Objects",
@@ -44,23 +76,13 @@ Param(
     [string[]]$FilesToScan,
     [bool]$Transcript = $true
 )
+
 if($Transcript){
     $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
     Start-Transcript -Path $LogLocation -ErrorAction SilentlyContinue    
 }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-class Log4JResult {
-    [string]$FilePath
-    [bool]$Vulnerable
-    [bool]$EmbeddedJarVulnerable
-    [string[]]$DetectedClass
-    [string[]]$DetectedVersion
-    [string[]]$CVE
-    [string]$FileHash
-    [string]$ParentJarPath
-}
 
 $Global:Log4ShellResults = New-Object System.Collections.Generic.List[object]
 
@@ -70,10 +92,23 @@ Get-ChildItem "$PSScriptRoot\Functions" -Filter '*.ps1' | ForEach-Object { . $_.
 
 #endregion
 
-$null = Get-Log4ShellIdentifiers -CVEsToDetect $CVEsToDetect
+$FixedCVEToDetect = @()
 
+foreach($instance in $CVEsToDetect){
+    $FixedCVEToDetect += @($instance.Split(","))
+}
 
-if($null -ne $FilesToScan) {
+$null = Get-Log4ShellIdentifiers -CVEsToDetect $FixedCVEToDetect
+
+$FilesToScanFixed = @()
+
+foreach($file in $FilesToScan){
+    if(-not [string]::IsNullOrWhiteSpace($file)){
+        $FilesToScanFixed += @($file)
+    }
+}
+
+if($FilesToScanFixed.Count -gt 0) {
     $JavaFiles = @($FilesToScan)
 }
 else{
@@ -90,7 +125,7 @@ foreach($file in ($JavaFiles | Select-Object -Unique) ){
         }
         elseif($result.GetType().IsArray){
             foreach($r in $result){
-                if($r.GetType().Name -eq 'Log4JResult'){
+                if($r.GetType().Name -eq 'PSCustomObject'){
                     $Global:Log4ShellResults.Add($r)
                     $resultAdded = $true
                 }
@@ -99,7 +134,7 @@ foreach($file in ($JavaFiles | Select-Object -Unique) ){
                 Write-Warning "Unexpected result from file $($file) - could not process"
             }
         }
-        elseif($result.GetType().Name -eq 'Log4JResult'){
+        elseif($result.GetType().Name -eq 'PSCustomObject'){
             $Global:Log4ShellResults.Add($result)
         }
         else{

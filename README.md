@@ -127,3 +127,6 @@ Great, glad someone's using the script. Post the issue in GitHub and I'll take a
     * Added JSON as output type
     * Added parameter for OutputAll - this will output vulnerable and non-vulnerable objects (can parse which is which through the Vulnerable property)
     * Added Transcript parameter to enable / disable transcripts on the scan
+* 1.3.1 - Made File parameter and CVE parameter accept comma separated strings or arrays
+    * Added help
+    * Removed custom class for results - when rerunning in the same Posh session would cause issues
