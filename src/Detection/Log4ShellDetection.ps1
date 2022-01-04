@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.3.1
+.VERSION 1.3.2
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -52,6 +52,9 @@ Skip scanning the drive and instead scan specific files. Wants an array, but if 
 .PARAMETER Transcript
 If true, will output a transcript to $env:Temp. If false, no transcript generated
 
+.PARAMETER FoldersToScan
+Scan specific folders on the system
+
 .EXAMPLE
 PS> . .\Log4ShellDetection.ps1 "Registry" 0 "CVE-2021-44228,CVE-2021-45046" "" 0
 Example usable from cmd.exe to scan for two specific CVEs, disable transcripts, and put results in the registry.
@@ -74,6 +77,7 @@ Param(
     [bool]$OutputAll = $false,
     [string[]]$CVEsToDetect = @("CVE-2021-44228","CVE-2021-45046","CVE-2021-45105","CVE-2021-4104"),
     [string[]]$FilesToScan,
+    [string[]]$FoldersToScan,
     [bool]$Transcript = $true
 )
 
@@ -104,12 +108,26 @@ $FilesToScanFixed = @()
 
 foreach($file in $FilesToScan){
     if(-not [string]::IsNullOrWhiteSpace($file)){
-        $FilesToScanFixed += @($file)
+        $FilesToScanFixed += @($file.Split(','))
+    }
+}
+
+$FoldersToScanFixed = @()
+
+foreach($folder in $FoldersToScan){
+    if(-not [string]::IsNullOrWhiteSpace($folder)){
+        $FoldersToScanFixed += @($folder.Split(','))
     }
 }
 
 if($FilesToScanFixed.Count -gt 0) {
     $JavaFiles = @($FilesToScan)
+}
+elseif($FoldersToScanFixed.Count -gt 0){
+    $JavaFiles = @()
+    foreach($Folder in $FoldersToScanFixed){
+        $JavaFiles += Find-Log4ShellFiles -root $folder
+    }
 }
 else{
     $JavaFiles = Find-Log4ShellFiles
