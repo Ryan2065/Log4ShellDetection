@@ -17,6 +17,16 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '6.0.x'
+    - name: Install Clang
+      # You may pin to the exact commit or the version.
+      # uses: egor-tensin/setup-clang@01d437c0618e76d3c44e7d58f5d175c75cb37bac
+      uses: egor-tensin/setup-clang@v1
+      with:
+        version: latest
+        platform: x64
+        cygwin: 0
+        cc: 1
+        hardlinks: 0
     - name: Restore dependencies
       run: dotnet restore
       working-directory: ./src/CommandLineTool/Log4ShellDetection/Log4ShellDetection
