@@ -1,0 +1,33 @@
+name: .NET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '6.0.x'
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./src/CommandLineTool/Log4ShellDetection/Log4ShellDetection
+    - name: Publish
+      run: dotnet publish -r linux-x64 -c Release --self-contained true --no-restore -o ./bin/Publish/Linux-x64
+      working-directory: ./src/CommandLineTool/Log4ShellDetection/Log4ShellDetection
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.3.1
+      with:
+        # Artifact name
+        name: Log4ShellDetection-Linux
+        path: ./src/CommandLineTool/Log4ShellDetection/Log4ShellDetection/bin/Publish/Linux-x64/Log4ShellDetection
+        retention-days: 0
+  
