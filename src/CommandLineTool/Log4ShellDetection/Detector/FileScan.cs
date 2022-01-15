@@ -15,6 +15,7 @@ namespace Detector
         private bool _jmsAppender = false;
         private bool disposedValue;
 
+
         public ScanResult ScanFile(string filePath)
         {
             _scanResult = new ScanResult(filePath);
@@ -46,7 +47,7 @@ namespace Detector
         }
         private string SHA256HashStream(Stream stream)
         {
-            using(var sha256 = SHA256Managed.Create())
+            using(var sha256 = SHA256.Create())
             {
                 return BitConverter.ToString(sha256.ComputeHash(stream)).ToLowerInvariant().Replace("-", "");
             }

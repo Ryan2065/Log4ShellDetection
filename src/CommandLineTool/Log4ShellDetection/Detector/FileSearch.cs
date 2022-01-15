@@ -8,9 +8,29 @@ namespace Detector
 {
     public class FileSearch
     {
+        public List<string> ExcludePaths { get; set; } = new List<string>();
+        public ConcurrentQueue<string> QueueVulnerableFiles { get; set; } = new ConcurrentQueue<string>();
+
         private ConcurrentQueue<string> _queuePaths = new ConcurrentQueue<string>();
-        private ConcurrentQueue<string> _queueVulnerableFiles = new ConcurrentQueue<string>();
         private List<Task> _taskList = new List<Task>();
+
+        public bool ShouldScan(string pathToValidate)
+        {
+            if (string.IsNullOrWhiteSpace(pathToValidate))
+            {
+                return false;
+            }
+            foreach(var e in ExcludePaths)
+            {
+                if(pathToValidate.StartsWith(e, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    Console.WriteLine($"Excluding {pathToValidate} from scan");
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private void HandleDirectorySearchError(Exception ex, string pathThatErrored)
         {
 
@@ -25,7 +45,10 @@ namespace Detector
                     {
                         foreach (string subDir in Directory.EnumerateDirectories(path))
                         {
-                            _queuePaths.Enqueue(subDir);
+                            if (ShouldScan(subDir))
+                            {
+                                _queuePaths.Enqueue(subDir);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -40,7 +63,8 @@ namespace Detector
                             || file.EndsWith(".war", StringComparison.InvariantCultureIgnoreCase)
                             || file.EndsWith(".war", StringComparison.InvariantCultureIgnoreCase))
                             {
-                                _queueVulnerableFiles.Enqueue(file);
+                                Console.WriteLine($"Will analyze java file {file}");
+                                QueueVulnerableFiles.Enqueue(file);
                             }
                         }
                     }
@@ -51,7 +75,7 @@ namespace Detector
                 }
             }
         }
-        public IEnumerable<string> StartThreadedSearch(int numberOfThreads = 8)
+        public void StartThreadedSearch(int numberOfThreads = 8)
         {
             int taskCount = _taskList.Count;
             while(taskCount < numberOfThreads)
@@ -59,12 +83,9 @@ namespace Detector
                 _taskList.Add(Task.Run(() => SearchQueue()));
                 taskCount++;
             }
-            foreach(var s in WaitTasks())
-            {
-                yield return s;
-            }
+            WaitTasks();
         }
-        public IEnumerable<string> WaitTasks()
+        public void WaitTasks()
         {
             Task.WaitAny(_taskList.ToArray());
             for (int i = _taskList.Count - 1; i > -1; i--)
@@ -75,35 +96,20 @@ namespace Detector
                     _taskList.RemoveAt(i);
                 }
             }
-            if(!_queuePaths.IsEmpty)
+            if (!_queuePaths.IsEmpty)
             {
-                foreach(var s in StartThreadedSearch())
-                {
-                    yield return s;
-                }
+                StartThreadedSearch();                
             }
             else if (_taskList.Count > 0)
             {
-                foreach (var s in WaitTasks())
-                {
-                    yield return s;
-                }
+                WaitTasks();
             }
-            while (!_queueVulnerableFiles.IsEmpty)
-            {
-                if(_queueVulnerableFiles.TryDequeue(out string result))
-                {
-                    yield return result;
-                }
-            }
+            
         }
-        public IEnumerable<string> GetRecursiveFiles(string filePath)
+        public Task GetRecursiveFiles(string filePath)
         {
             _queuePaths.Enqueue(filePath);
-            foreach (var s in StartThreadedSearch())
-            {
-                yield return s;
-            }
+            return Task.Run(() => StartThreadedSearch());
         }
         public IEnumerable<string> GetRootDrives()
         {

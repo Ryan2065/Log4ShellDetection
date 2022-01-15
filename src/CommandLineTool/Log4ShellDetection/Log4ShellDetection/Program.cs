@@ -1,27 +1,13 @@
-﻿
-using Detector;
+﻿using System.CommandLine;
 
-var fileSearch = new Detector.FileSearch();
-var rootDrives = fileSearch.GetRootDrives();
-
-int scannedFiles = 0;
-int vulnerableFileCount = 0;
-List<ScanResult> scanResults = new List<ScanResult>();
-foreach(var rootDrive in rootDrives)
+var pathsOption = new Option<string[]>(new[] { "--paths", "-p" }, description: "Path or paths to scan - if null scans everything");
+var excludeOption = new Option<string[]>(new[] { "--excludepath", "-ep" }, description: "Paths to exclude from the scan");
+var verboseOption = new Option<string[]>(new[] { "--excludepath", "-ep" }, description: "Paths to exclude from the scan");
+var cmd = new RootCommand { pathsOption, excludeOption };
+cmd.SetHandler((string[] paths, string[] excludePaths) => 
 {
-    foreach(var f in fileSearch.GetRecursiveFiles(rootDrive))
-    {
-        using (var searcher = new Detector.FileScan())
-        {
-            var result = searcher.ScanFile(f);
-            scanResults.Add(result);
-            if (result.Vulnerable)
-            {
-                vulnerableFileCount++;
-            }
-            scannedFiles++;
-        }
-    }
-}
+    Log4ShellDetection.RunDetector.Start(paths, excludePaths);
+}, pathsOption, excludeOption);
 
-Console.WriteLine($"Finished scanning {scannedFiles} files - found {vulnerableFileCount} vulnerabilities");
+return cmd.Invoke(args);
+
