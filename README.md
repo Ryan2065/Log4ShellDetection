@@ -130,3 +130,15 @@ Great, glad someone's using the script. Post the issue in GitHub and I'll take a
 * 1.3.1 - Made File parameter and CVE parameter accept comma separated strings or arrays
     * Added help
     * Removed custom class for results - when rerunning in the same Posh session would cause issues
+* 1.4.0 - New release with feedback incorporated!
+    * New output type - CountVulnerable - will simply output the number of vulnerable files
+    * New output type - Silent
+    * New Parameter: TatooRegistry - allows you to scan with a different output type (like Host) and still have results put in the registry
+    * New Parameter: FoldersToScan - Can give a list of folders to scan. Accepts either an array or comma separated list
+    * New Parameter: Transcript - Will enable / disable the transcript
+    * New Parameter: LowProcessPriority - Sets the Posh process to low processor priority to not take up too many resources
+    * New CVE Detection: CVE-2021-44832 - will now detect the latest RCE for Log4J
+    * Transcript no longer outputs information if it's enabled. 
+    * Manifest.mf detection has been changed to a file hash detection - was using this to determine which version of Log4J the file is, even if someone removed the JDNI files. Previously this would cause false positives. This should be resolved.
+    * Search change - Search no longer uses robocopy so this should work on Linux also
+
