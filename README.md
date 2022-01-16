@@ -141,4 +141,4 @@ Great, glad someone's using the script. Post the issue in GitHub and I'll take a
     * Transcript no longer outputs information if it's enabled. 
     * Manifest.mf detection has been changed to a file hash detection - was using this to determine which version of Log4J the file is, even if someone removed the JDNI files. Previously this would cause false positives. This should be resolved.
     * Search change - Search no longer uses robocopy so this should work on Linux also
-
+* 1.4.1 - Added parameter SkipNetworkDrives - On a Windows system will only scan local drives. Uses Win32_LogicalDisk.DriveType = 3

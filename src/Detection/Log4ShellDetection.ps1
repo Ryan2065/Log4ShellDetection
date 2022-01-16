@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.4.0
+.VERSION 1.4.1
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -80,7 +80,8 @@ Param(
     [string[]]$FilesToScan,
     [string[]]$FoldersToScan,
     [bool]$Transcript = $true,
-    [bool]$LowProcessPriority = $false
+    [bool]$LowProcessPriority = $false,
+    [bool]$SkipNetworkDrives = $false
 )
 
 if($Transcript){
@@ -140,10 +141,15 @@ elseif($FoldersToScanFixed.Count -gt 0){
     }
 }
 else{
-    $PSDrives = Get-PSDrive -PSProvider FileSystem
-    $Roots = @($PSDrives.Root)
+    if($SkipNetworkDrives){
+        $Roots = @((Get-CimInstance -ClassName 'Win32_LogicalDisk' -Filter 'DriveType = 3').DeviceId)
+    }
+    else{
+        $PSDrives = Get-PSDrive -PSProvider FileSystem
+        $Roots = @($PSDrives.Root)
+    }
     foreach($r in $roots){
-        $null = Find-Log4ShellFiles -root $r | Start-Log4ShellScan
+        $null = Find-Log4ShellFiles -root "$($r.TrimEnd('\'))\" | Start-Log4ShellScan
     }
 }
 
