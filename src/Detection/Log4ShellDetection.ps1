@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.3.2
+.VERSION 1.4.0
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -72,18 +72,26 @@ Scans a specific file with transcript off
 #>
 
 Param(
-    [ValidateSet("Host", "Registry", "Objects", "JSON")]
+    [ValidateSet("Host", "Registry", "Objects", "JSON", "CountVulnerable", "Silent")]
     $OutputType = "Objects",
+    [bool]$TatooRegistry = $false,
     [bool]$OutputAll = $false,
-    [string[]]$CVEsToDetect = @("CVE-2021-44228","CVE-2021-45046","CVE-2021-45105","CVE-2021-4104"),
+    [string[]]$CVEsToDetect = @("CVE-2021-44228","CVE-2021-45046","CVE-2021-45105","CVE-2021-4104","CVE-2021-44832"),
     [string[]]$FilesToScan,
     [string[]]$FoldersToScan,
-    [bool]$Transcript = $true
+    [bool]$Transcript = $true,
+    [bool]$LowProcessPriority = $false
 )
 
 if($Transcript){
     $LogLocation = "$($env:TEMP)\log4j-detection-{0}.log" -f ( Get-Date -Format yyyyMMddhhmm )
-    Start-Transcript -Path $LogLocation -ErrorAction SilentlyContinue    
+    $null = Start-Transcript -Path $LogLocation -ErrorAction SilentlyContinue    
+}
+
+if($LowProcessPriority){
+    $currentProc = [System.Diagnostics.Process]::GetCurrentProcess()
+    $CurrentProcesPriority = $currentProc.PriorityClass
+    $currentProc.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::Idle
 }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -120,52 +128,22 @@ foreach($folder in $FoldersToScan){
     }
 }
 
+$LogScanFolders = @()
+
 if($FilesToScanFixed.Count -gt 0) {
-    $JavaFiles = @($FilesToScan)
+    $null = $FilesToScan | Start-Log4ShellScan
 }
 elseif($FoldersToScanFixed.Count -gt 0){
     $JavaFiles = @()
     foreach($Folder in $FoldersToScanFixed){
-        $JavaFiles += Find-Log4ShellFiles -root $folder
+        $null = Find-Log4ShellFiles -root $folder | Start-Log4ShellScan
     }
 }
 else{
-    $JavaFiles = Find-Log4ShellFiles
-}
-
-foreach($file in ($JavaFiles | Select-Object -Unique) ){
-    if([string]::IsNullOrWhiteSpace($file)) { continue }
-    try{
-        $result = Search-Log4Shell -Path $file
-        $resultAdded = $false
-        if($null -eq $result){
-            Write-Warning "No result returned for file $file"
-        }
-        elseif($result.GetType().IsArray){
-            foreach($r in $result){
-                if($r.GetType().Name -eq 'PSCustomObject'){
-                    $Global:Log4ShellResults.Add($r)
-                    $resultAdded = $true
-                }
-            }
-            if(-not $resultAdded){
-                Write-Warning "Unexpected result from file $($file) - could not process"
-            }
-        }
-        elseif($result.GetType().Name -eq 'PSCustomObject'){
-            $Global:Log4ShellResults.Add($result)
-        }
-        else{
-            Write-Warning "Unexpected result from file $($file) - could not process"
-        }
-    }
-    catch{
-        if($_.Exception.Message -eq 'Exception calling "OpenRead" with "1" argument(s): "End of Central Directory record could not be found."'){
-            Write-Warning "Error processing jar file $($file) - appears corrupt`n$($_.Exception.Message)"
-        }
-        else{
-            Write-Warning "Error processing jar file $($file)`n$($_.Exception.Message)"
-        }
+    $PSDrives = Get-PSDrive -PSProvider FileSystem
+    $Roots = @($PSDrives.Root)
+    foreach($r in $roots){
+        $null = Find-Log4ShellFiles -root $r | Start-Log4ShellScan
     }
 }
 
@@ -189,7 +167,7 @@ if($OutputType -eq 'Host'){
         }
     }
 }
-elseif($OutputType -eq "Registry"){
+elseif($OutputType -eq "Registry" -or $TatooRegistry){
     #Only write to HKLM if we're admin
     $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     if($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){
@@ -237,6 +215,15 @@ elseif($OutputType -eq "Objects"){
 elseif($OutputType -eq 'JSON'){
     $OutputSet | ConvertTo-JSON
 }
+elseif($OutputType -eq 'CountVulnerable'){
+    $VulnerableFiles.count
+}
+
+if($LowProcessPriority -and ($null -ne $CurrentProcesPriority)){
+    $currentProc = [System.Diagnostics.Process]::GetCurrentProcess()
+    $currentProc.PriorityClass = $CurrentProcesPriority
+}
+
 if($Transcript){
-    Stop-Transcript
+    $null = Stop-Transcript
 }

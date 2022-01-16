@@ -11,7 +11,8 @@ $Log4ShellCVE = @(
     'CVE-2021-44228',
     'CVE-2021-45046',
     'CVE-2021-45105',
-    'CVE-2021-4104'
+    'CVE-2021-4104',
+    'CVE-2021-44832'
 )
 
 Function ProcessLog4JFile {
@@ -32,7 +33,7 @@ Function ProcessLog4JFile {
     }
     foreach($entry in $Zip.Entries){
         if($entry.Name -match "jndilookup.class" -or $entry.Name -match "jndimanager.class" -or $entry.Name -match "socketnode.class" -or $entry.Name -match "manifest.mf"){
-            if($entry.Name -eq "jndilookup.class" -or $entry.Name -eq "jndimanager.class" -or $entry.Name -eq "socketnode.class"){
+            if($entry.Name -eq "jndilookup.class" -or $entry.Name -eq "jndimanager.class" -or $entry.Name -eq "socketnode.class" -or $entry.Name -eq 'manifest.mf'){
                 $Stream = $entry.Open()
                 $managedSHA = [System.Security.Cryptography.SHA256Managed]::Create()
                 $Hash = [System.BitConverter]::ToString( $managedSHA.ComputeHash($Stream) ).Replace("-","").ToLower()
@@ -40,36 +41,9 @@ Function ProcessLog4JFile {
                 $Stream.Close()
                 $Log4JEntry["Hash-$($entry.Name)"] = $Hash
             }
-            elseif($entry.Name -like 'manifest.mf'){
-                $Stream = $entry.Open()
-                $sr = [System.IO.StreamReader]::new($Stream)
-                $manifestString = $sr.ReadToEnd()
-                $FoundReleaseVersion = $false
-                $IsLog4J = $false
-                foreach($line in $manifestString.Split("`n").Trim()){
-                    if($line -like '*Log4jReleaseVersion*'){
-                        $FoundReleaseVersion = $true
-                        $Log4JEntry['ReleaseVersionString'] = $line.Trim()
-                        $Log4JEntry['Version'] = ($line.Split(":")[-1]).Trim()
-                    }
-                    if($line -like '*Implementation-Title: log4j*'){
-                        $IsLog4J = $true
-                    }
-                }
-                if(-not $FoundReleaseVersion -and $IsLog4J){
-                    foreach($line in $manifestString.Split("`n").Trim()){
-                        if($line -like '*Implementation-Version*'){
-                            $Log4JEntry['ImplementationVersionString'] = $line.Trim()
-                            $Log4JEntry['Version'] = ($line.Split(":")[-1]).Trim()
-                        }
-                    }
-                }
-                $Stream.Close()
-            }
         }
     }
-    if($Log4JEntry["ReleaseVersionString"]){ $Log4JEntry }
-    elseif($Log4JEntry["ImplementationVersionString"]){ $Log4JEntry }
+    $Log4JEntry
 }
 
 $Global:ErrorJars = @()
@@ -124,7 +98,7 @@ foreach($version in $Log4JVersions.Response.docs){
         $Result['CVE'] = $CVEs -join ","
         $Result['MavenVersion'] = $version.v
         $Results += $result
-        #$null = Remove-Item $JarFile -Force
+        #$null = Remove-Item $JarFile -Force -ErrorAction SilentlyContinue
     }
 }
 
