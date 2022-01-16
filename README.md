@@ -31,6 +31,10 @@ I wrote a script to scrape Maven (site where Log4J is hosted) Log4J versions and
     * CVE associated with Log4J v1.*
     * Detected based on socketnode.class file in the jar
     * Log4J v1.* is only vulnerable if configured with JMSAppender. As of v1.3 of the detection script, we only flag Log4J v1 as vulnerable if JMSAppender is also there.
+* CVE-2021-44832
+    * Description: Remote code execution bug, but requires the attacker to have control of the Log4J config. Much harder to exploit, but still a remote code execution CVE.
+    * CVE associated with Log4J v2.* less than 2.17.1
+    * Detected based on jdnimanager.class or jdnilookup.class from vulnerable log4j versions
 
 
 # How do I use it?
