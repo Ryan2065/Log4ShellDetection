@@ -73,7 +73,7 @@ Function Search-Log4Shell {
             foreach($hashCheckResult in $hashCheckResults){
                 $Result.CVE += @($hashCheckResult.CVE.Split(","))
                 if(-not $FoundVersionFromManifest){
-                    $Result.DetectedVersion += @($hashCheckResult.Version)
+                    $Result.DetectedVersion += @($hashCheckResult.MavenVersion)
                 }
                 if($entry.Name -notmatch 'manifest.mf'){
                     $Result.DetectedClass += @($entry.Name)

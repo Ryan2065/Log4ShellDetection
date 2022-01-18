@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 1.4.1
+.VERSION 1.4.2
 
 .GUID f95ba891-b109-4180-89e0-c2827eababef
 
@@ -173,47 +173,8 @@ if($OutputType -eq 'Host'){
         }
     }
 }
-elseif($OutputType -eq "Registry" -or $TatooRegistry){
-    #Only write to HKLM if we're admin
-    $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-    if($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){
-        $Hive = [Microsoft.Win32.RegistryHive]::LocalMachine
-    }
-    else{
-        $Hive = [Microsoft.Win32.RegistryHive]::CurrentUser
-    }
-    If ($ENV:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
-        $key = [Microsoft.Win32.RegistryKey]::OpenBaseKey($Hive, [Microsoft.Win32.RegistryView]::Registry64)
-
-    }
-    else{
-        $key = [Microsoft.Win32.RegistryKey]::OpenBaseKey($Hive, [Microsoft.Win32.RegistryView]::Default)
-    }
-    $SoftwareKey = $Key.OpenSubKey('SOFTWARE', $true)
-    try{
-        if($Log4ShellKey = $SoftwareKey.OpenSubKey('Log4ShellDetection')){
-            # removing previous results
-            $null = $SoftwareKey.DeleteSubKeyTree('Log4ShellDetection')
-        }
-    }
-    catch{
-        
-    }
-    $null = $SoftwareKey.CreateSubKey('Log4ShellDetection')
-    $Log4ShellDetectionKey = $SoftwareKey.OpenSubKey('Log4ShellDetection', $true)
-    foreach($vFile in $OutputSet){
-        $null = $Log4ShellDetectionKey.CreateSubKey($vFile.FileHash)
-        $tempSubKey = $Log4ShellDetectionKey.OpenSubKey($vFile.FileHash, $true)
-        $Log4ShellDetectionKey.SetValue("FilePath", "")
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "FilePath" -Value $vFile.FilePath
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "Vulnerable" -Value $vFile.Vulnerable
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "EmbeddedJarVulnerable" -Value $vFile.EmbeddedJarVulnerable
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "DetectedClass" -Value ($vFile.DetectedClass -join ",")
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "DetectedVersion" -Value ($vFile.DetectedVersion -join ",")
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "CVE" -Value ($vFile.CVE -join ",")
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "FileHash" -Value $vFile.FileHash
-        Set-Log4ShellRegistryValue -Key $tempSubKey -Name "ParentJarPath" -Value $vFile.ParentJarPath
-    }
+elseif($OutputType -eq "Registry"){
+    Write-Log4ShellRegistry -OutputSet $OutputSet
 }
 elseif($OutputType -eq "Objects"){
     $OutputSet
@@ -223,6 +184,10 @@ elseif($OutputType -eq 'JSON'){
 }
 elseif($OutputType -eq 'CountVulnerable'){
     $VulnerableFiles.count
+}
+
+if($TatooRegistry -and ( $OutputType -ne 'Registry' )){
+    Write-Log4ShellRegistry -OutputSet $OutputSet
 }
 
 if($LowProcessPriority -and ($null -ne $CurrentProcesPriority)){
