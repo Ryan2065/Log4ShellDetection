@@ -146,3 +146,7 @@ Great, glad someone's using the script. Post the issue in GitHub and I'll take a
     * Manifest.mf detection has been changed to a file hash detection - was using this to determine which version of Log4J the file is, even if someone removed the JDNI files. Previously this would cause false positives. This should be resolved.
     * Search change - Search no longer uses robocopy so this should work on Linux also
 * 1.4.1 - Added parameter SkipNetworkDrives - On a Windows system will only scan local drives. Uses Win32_LogicalDisk.DriveType = 3
+* 1.4.2 - Small update with some bug fixes / QOL improvements
+        * Added "LastScanTime" to the Registry output to know when the data was gotten
+        * TatooRegistry will no longer stop other output types from working
+        * Reports back Log4J version again
